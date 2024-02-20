@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package github.com.acarlson99.schedule;
+
+import "google/protobuf/duration.proto";
+
+option go_package = "./go";
+
+message Events { repeated Event event = 1; }
+
+enum PowerState {
+  Off = 0;
+  On = 1;
+}
+
+message Event {
+  string name = 1;
+  repeated Action actions = 5;
+  oneof repeat { TimeOfDay at = 2; }
+
+  message Color {
+    int32 r = 1;
+    int32 g = 2;
+    int32 b = 3;
+  }
+  message Action {
+    oneof action {
+      PowerState power = 11;
+      Color color = 12;
+      int32 color_temp = 13;
+      // brightness of 0 will resolve to `on=false`
+      int32 brightness = 14;
+      // -100 - 100; negative number to decrease
+      // -100 should set brightness to 0%
+      // 100 should set brightness to 100%
+      int32 relative_brightness = 15;
+    }
+  }
+}
+
+message TimeOfDay {
+  int32 hour = 1;   // 0-23 24-hr time
+  int32 minute = 2; // 0-59
+  int32 second = 3; // 0-59
+}

@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package github.com.acarlson99.devices;
+
+option go_package = "./go";
+
+message ElgatoLight {
+  string name = 1;
+  string url = 2;
+  string port = 3;
+}
+
+message GoveeLight {
+  string mac_address = 1;
+  string model = 2;
+}
+
+message SmartDevice {
+  oneof Device {
+    ElgatoLight elgato_light = 1;
+    GoveeLight govee_light = 2;
+  }
+  // TODO: `features` field (temperature, color range, brightness, etc.)
+}
+
+message Devices {
+  repeated SmartDevice device = 1;
+  repeated AuthType api_auth = 2;
+}
+
+message AuthType {
+  message Bearer { string token = 1; }
+  message APIKey {
+    string key = 1;
+    string value = 2;
+    string name = 3;
+  }
+
+  enum ServiceType { GOVEE = 0; }
+
+  string name = 1;
+  string description = 2;
+  ServiceType service = 3;
+  oneof Auth {
+    APIKey apiKey = 4;
+    APIKey header = 5;
+    Bearer bearer = 6;
+  }
+}
