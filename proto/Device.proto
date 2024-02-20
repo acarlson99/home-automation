@@ -13,6 +13,7 @@ message ElgatoLight {
 message GoveeLight {
   string mac_address = 1;
   string model = 2;
+  string name = 3;
 }
 
 message SmartDevice {

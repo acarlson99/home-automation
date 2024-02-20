@@ -2,12 +2,32 @@ package elgato
 
 import (
 	"fmt"
-
-	device_controller "github.com/acarlson99/home-automation/src/device-controller"
 )
 
-func NewDevice(light *Light) *device_controller.Device {
-	return device_controller.NewDevice(light)
+// implement controller.IDevice
+func (light *Light) GetName() string {
+	return light.config.Name
+}
+
+func (light *Light) NameMatches(s string) bool {
+	return light.GetName() == s
+}
+
+func (light *Light) BeginBatch() error {
+	return nil
+	// // TODO: this
+	// lights, err := light.GetLightVals()
+	// if err != nil {
+	// 	return err
+	// }
+	// light.lights = lights
+	// return nil
+}
+
+func (light *Light) SendBatch() error {
+	return nil
+	// light.SetLightVals(light.lights)
+	// return nil
 }
 
 func (light *Light) GetBrightness() (int, error) {
@@ -76,4 +96,42 @@ func (light *Light) SetColorTemperature(n int) (int, error) {
 	}
 
 	return light.GetColorTemperature()
+}
+
+func (light *Light) GetPowerState() (bool, error) {
+	vs, err := light.GetLightVals()
+	if err != nil {
+		return false, err
+	}
+	if len(vs.Lights) < 1 {
+		return false, fmt.Errorf("light.GetLightVals() unexpectedly returned `%+v`", vs)
+	}
+	return vs.Lights[0].On == 1, nil
+}
+
+func (light *Light) SetPowerState(on bool) (bool, error) {
+	vs, err := light.GetLightVals()
+	if err != nil {
+		return false, err
+	}
+	if len(vs.Lights) < 1 {
+		return false, fmt.Errorf("light.GetLightVals() unexpectedly returned `%+v`", vs)
+	}
+	for i := range vs.Lights {
+		if on {
+			vs.Lights[i].On = 1
+		} else {
+			vs.Lights[i].On = 0
+		}
+	}
+
+	vs, err = light.SetLightVals(vs)
+	if err != nil {
+		return false, err
+	}
+	if len(vs.Lights) < 1 {
+		return false, fmt.Errorf("light.GetLightVals() unexpectedly returned `%+v`", vs)
+	}
+
+	return light.GetPowerState()
 }

@@ -32,28 +32,28 @@ type LightsConfig struct {
 
 type Light struct {
 	lights *LightsConfig
-	pb     *hpb.ElgatoLight
+	config *hpb.ElgatoLight
 	client *http.Client
 }
 
-func NewLight(pb *hpb.ElgatoLight) *Light {
+func NewLight(conf *hpb.ElgatoLight) *Light {
 	return &Light{
 		client: http.DefaultClient,
 		lights: nil,
-		pb:     pb,
+		config: conf,
 	}
 }
 
-func NewLightWithClient(pb *hpb.ElgatoLight, client *http.Client) *Light {
+func NewLightWithClient(conf *hpb.ElgatoLight, client *http.Client) *Light {
 	return &Light{
 		client: client,
 		lights: nil,
-		pb:     pb,
+		config: conf,
 	}
 }
 
 func (light *Light) GetLightVals() (*LightsConfig, error) {
-	url := common.FmtURL(light.pb.GetUrl(), light.pb.GetPort(), "/elgato/lights")
+	url := common.FmtURL(light.config.GetUrl(), light.config.GetPort(), "/elgato/lights")
 	method := "GET"
 	req, err := http.NewRequest(method, url, nil)
 
@@ -81,7 +81,7 @@ func (light *Light) GetLightVals() (*LightsConfig, error) {
 }
 
 func (light *Light) SetLightVals(cfg *LightsConfig) (*LightsConfig, error) {
-	url := common.FmtURL(light.pb.GetUrl(), light.pb.GetPort(), "/elgato/lights")
+	url := common.FmtURL(light.config.GetUrl(), light.config.GetPort(), "/elgato/lights")
 	method := "PUT"
 
 	bs, err := json.Marshal(cfg)

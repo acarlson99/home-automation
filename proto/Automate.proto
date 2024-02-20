@@ -11,13 +11,21 @@ enum PowerState {
   On = 1;
 }
 
+message DeviceIdentifier {
+  oneof ident { string name = 1; }
+}
+
 message Event {
   string name = 1;
   repeated Action actions = 5;
   message Schedule {
-    oneof repeat { TimeOfDay at = 1; }
+    oneof start {
+      TimeOfDay daily = 1;
+      string crontab = 2;
+    }
   }
   repeated Schedule schedule = 2;
+  repeated DeviceIdentifier devices = 3;
 
   message Color {
     int32 r = 1;
