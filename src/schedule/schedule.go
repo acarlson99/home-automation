@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/acarlson99/home-automation/src/common"
 	"github.com/acarlson99/home-automation/src/controller"
+	"github.com/acarlson99/home-automation/src/device"
 	"github.com/go-co-op/gocron/v2"
 
 	hpb "github.com/acarlson99/home-automation/proto/go"
@@ -22,7 +22,7 @@ func eventTimes(event *hpb.Event) []gocron.AtTime {
 
 type Scheduler gocron.Scheduler
 
-func DevicesEvents(devices []*controller.Device, events *hpb.Events) (Scheduler, error) {
+func DevicesEvents(devices []*device.Device, events *hpb.Events) (Scheduler, error) {
 	s, err := gocron.NewScheduler()
 	if err != nil {
 		return nil, fmt.Errorf("could not create gocron scheduler: %v", err)
@@ -45,7 +45,7 @@ func DevicesEvents(devices []*controller.Device, events *hpb.Events) (Scheduler,
 			jobDef = gocron.DailyJob(1, times)
 		}
 
-		eventDevices := []*controller.Device{}
+		eventDevices := []*device.Device{}
 		for _, dev := range devices {
 			for _, dev2 := range event.GetDevices() {
 				if dev.NameMatches(dev2.GetName()) {
@@ -54,7 +54,7 @@ func DevicesEvents(devices []*controller.Device, events *hpb.Events) (Scheduler,
 			}
 		}
 
-		j, err := s.NewJob(jobDef, gocron.NewTask(devicesRunEvent, eventDevices, event))
+		j, err := s.NewJob(jobDef, gocron.NewTask(controller.RunEvent, eventDevices, event))
 		if err != nil {
 			return nil, fmt.Errorf("could not create gocron job: %v", err)
 		}
@@ -62,19 +62,4 @@ func DevicesEvents(devices []*controller.Device, events *hpb.Events) (Scheduler,
 	}
 
 	return s, nil
-}
-
-func devicesRunEvent(devices []*controller.Device, event *hpb.Event) {
-	dnames := []string{}
-	for _, d := range devices {
-		dnames = append(dnames, d.GetName())
-	}
-	log.Println("running scheduled routine", event.GetName(), "for devices", dnames)
-
-	f := func(d *controller.Device) error { return d.ExecuteAll(event.Actions) }
-	err := common.ConcurrentAggregateErrorFn(f, devices...)
-	if err != nil {
-		// TODO: more advanced error reporting than this
-		log.Printf("Error executing event %v: %v\n", event.Name, err)
-	}
 }

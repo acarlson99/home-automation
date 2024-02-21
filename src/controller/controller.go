@@ -1,50 +1,35 @@
 package controller
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/acarlson99/home-automation/src/common"
+	"github.com/acarlson99/home-automation/src/device"
+	"github.com/acarlson99/home-automation/src/expr"
 
 	hpb "github.com/acarlson99/home-automation/proto/go"
 )
 
-func (d *Device) ExecuteAll(actions []*hpb.Event_Action) error {
-	d.d.BeginBatch()
-	err := common.ConcurrentAggregateErrorFn(d.Execute, actions...)
-	if err != nil {
-		return err
+func RunEvent(devices []*device.Device, event *hpb.Event) {
+	dnames := []string{}
+	for _, d := range devices {
+		dnames = append(dnames, d.GetName())
 	}
-	return d.d.SendBatch()
-}
+	log.Println("running scheduled routine", event.GetName(), "for devices", dnames)
 
-func (d *Device) Execute(action *hpb.Event_Action) error {
-	switch act := action.Action.(type) {
-	case *hpb.Event_Action_On:
-		switch d := d.d.(type) {
-		case PowerState:
-			_, err := d.SetPowerState(act.On)
-			return err
-		}
-	case *hpb.Event_Action_Brightness:
-		switch d := d.d.(type) {
-		case Brightness:
-			_, err := d.SetBrightness(int(act.Brightness))
-			return err
-		}
-	case *hpb.Event_Action_RelativeBrightness:
-		return fmt.Errorf("relative brightness not implemented")
-	case *hpb.Event_Action_Color:
-		return fmt.Errorf("color not implemented")
-		// switch d := d.d.(type) {
-		// case Color:
-		// 	d.SetColor(int(act.Color))
-		// }
-	case *hpb.Event_Action_ColorTemp:
-		switch d := d.d.(type) {
-		case ColorTemperature:
-			_, err := d.SetColorTemperature(int(act.ColorTemp))
-			return err
-		}
+	do, err := expr.EvalComparisons(event.GetStartIf())
+	if err != nil {
+		log.Printf("Error evaluating comparison: %v\n", err)
 	}
-	return fmt.Errorf("action type %T called for invalid device %T", action.Action, d.GetName())
+	if !do {
+		log.Println("comparison returned false, skipping")
+		return
+	}
+
+	f := func(d *device.Device) error { return d.ExecuteAll(event.Actions) }
+	err = common.ConcurrentAggregateErrorFn(f, devices...)
+	if err != nil {
+		// TODO: more advanced error reporting than this
+		log.Printf("Error executing event %v: %v\n", event.Name, err)
+	}
 }

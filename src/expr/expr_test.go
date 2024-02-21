@@ -87,7 +87,7 @@ func TestEvalVar(t *testing.T) {
 	}
 }
 
-func Test_cmp(t *testing.T) {
+func Test_cmpOrd(t *testing.T) {
 	type args struct {
 		op  *hpb.Comparison_Operator
 		lhs int
@@ -107,6 +107,15 @@ func Test_cmp(t *testing.T) {
 				rhs: 9,
 			},
 			want: true,
+		},
+		{
+			name: "9!=9=true",
+			args: args{
+				op:  hpb.Comparison_NEQ.Enum(),
+				lhs: 9,
+				rhs: 9,
+			},
+			want: false,
 		},
 		{
 			name: "9>9=false",
@@ -154,6 +163,15 @@ func Test_cmp(t *testing.T) {
 			want: false,
 		},
 		{
+			name: "9!=10=false",
+			args: args{
+				op:  hpb.Comparison_NEQ.Enum(),
+				lhs: 9,
+				rhs: 10,
+			},
+			want: true,
+		},
+		{
 			name: "9>10=false",
 			args: args{
 				op:  hpb.Comparison_GT.Enum(),
@@ -192,13 +210,13 @@ func Test_cmp(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := cmp(tt.args.op, tt.args.lhs, tt.args.rhs)
+			got, err := cmpOrd(tt.args.op, tt.args.lhs, tt.args.rhs)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("cmp() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("cmpOrd() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("cmp() = %v, want %v", got, tt.want)
+				t.Errorf("cmpOrd() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -42,6 +42,8 @@ func (light *Light) GetBrightness() (int, error) {
 }
 
 func (light *Light) SetBrightness(n int) (int, error) {
+	light.mu.Lock()
+	defer light.mu.Unlock()
 	vs, err := light.GetLightVals()
 	if err != nil {
 		return 0, err
@@ -76,6 +78,8 @@ func (light *Light) GetColorTemperature() (int, error) {
 }
 
 func (light *Light) SetColorTemperature(n int) (int, error) {
+	light.mu.Lock()
+	defer light.mu.Unlock()
 	vs, err := light.GetLightVals()
 	if err != nil {
 		return 0, err
@@ -110,6 +114,8 @@ func (light *Light) GetPowerState() (bool, error) {
 }
 
 func (light *Light) SetPowerState(on bool) (bool, error) {
+	light.mu.Lock()
+	defer light.mu.Unlock()
 	vs, err := light.GetLightVals()
 	if err != nil {
 		return false, err

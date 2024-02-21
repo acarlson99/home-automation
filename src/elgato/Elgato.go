@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/acarlson99/home-automation/src/common"
 
@@ -34,6 +35,8 @@ type Light struct {
 	lights *LightsConfig
 	config *hpb.ElgatoLight
 	client *http.Client
+
+	mu sync.Mutex
 }
 
 func NewLight(conf *hpb.ElgatoLight) *Light {
@@ -84,6 +87,7 @@ func (light *Light) SetLightVals(cfg *LightsConfig) (*LightsConfig, error) {
 	url := common.FmtURL(light.config.GetUrl(), light.config.GetPort(), "/elgato/lights")
 	method := "PUT"
 
+	log.Println("setting light to cfg:", cfg)
 	bs, err := json.Marshal(cfg)
 	if err != nil {
 		return nil, err
@@ -113,6 +117,7 @@ func (light *Light) SetLightVals(cfg *LightsConfig) (*LightsConfig, error) {
 	}
 	var lightsConfig LightsConfig
 	err = json.Unmarshal(body, &lightsConfig)
+	log.Println("has set light to cfg:", lightsConfig)
 	return &lightsConfig, err
 }
 

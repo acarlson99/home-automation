@@ -87,6 +87,7 @@ message Comparison {
     EQ = 2;
     GTEQ = 3;
     LTEQ = 4;
+    NEQ = 5;
   }
 
   Operator op = 1;
@@ -106,8 +107,9 @@ message Event {
   repeated Schedule schedule = 2;
   repeated DeviceIdentifier devices = 3;
 
-  // TODO: implement this as precondition to Device.Execute
-  Comparison start_if = 4;
+  // setting many conditions results in
+  // `and`ing them together
+  repeated Comparison start_if = 4;
 
   message Color {
     int32 r = 1;

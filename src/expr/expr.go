@@ -4,17 +4,27 @@ import (
 	"fmt"
 	"reflect"
 
-	hpb "github.com/acarlson99/home-automation/proto/go"
+	"github.com/acarlson99/home-automation/src/device"
 	"golang.org/x/exp/constraints"
+
+	hpb "github.com/acarlson99/home-automation/proto/go"
 )
 
 func EvalVar(expr *hpb.Var) (*hpb.Primitive, error) {
 	switch e := expr.GetV().(type) {
 	case *hpb.Var_DeviceState:
 		// TODO: locate corresponding device
+		ident := e.DeviceState.GetDevice()
+		var d *device.Device
+		for _, dv := range device.GetDevices() {
+			if dv.IdentifierMatches(ident) {
+				d = dv
+				break
+			}
+		}
+		return d.GetDeviceState(e.DeviceState.Type.Enum())
 		// TODO: determine if device has requested information
 		// TODO: return said information in a user-friendly manner
-		return nil, nil // TODO: this
 	case *hpb.Var_BinOp:
 		return EvalBinaryOperator(e.BinOp)
 	case *hpb.Var_UnaryOp:
@@ -31,7 +41,7 @@ func EvalVar(expr *hpb.Var) (*hpb.Primitive, error) {
 	return nil, fmt.Errorf("no evaluation available for expr %+v", expr)
 }
 
-func cmp[T constraints.Ordered](op *hpb.Comparison_Operator, lhs, rhs T) (bool, error) {
+func cmpOrd[T constraints.Ordered](op *hpb.Comparison_Operator, lhs, rhs T) (bool, error) {
 	switch *op.Enum() {
 	case hpb.Comparison_GT:
 		return lhs > rhs, nil
@@ -43,11 +53,21 @@ func cmp[T constraints.Ordered](op *hpb.Comparison_Operator, lhs, rhs T) (bool, 
 		return lhs <= rhs, nil
 	case hpb.Comparison_EQ:
 		return lhs == rhs, nil
+	case hpb.Comparison_NEQ:
+		return lhs != rhs, nil
 	}
 	return false, fmt.Errorf("invalid operation %v for types %T %T", op, lhs, rhs)
 }
 
-// todo: nvidia chatwithrtx
+func EvalComparisons(exprs []*hpb.Comparison) (bool, error) {
+	for _, cond := range exprs {
+		ok, err := EvalComparison(cond)
+		if !ok || err != nil {
+			return ok, err
+		}
+	}
+	return true, nil
+}
 
 func EvalComparison(expr *hpb.Comparison) (bool, error) {
 	lhs, err := EvalVar(expr.Lhs)
@@ -64,16 +84,19 @@ func EvalComparison(expr *hpb.Comparison) (bool, error) {
 
 	switch lhs.GetV().(type) {
 	case *hpb.Primitive_Bool:
-		if expr.GetOp().Enum() != hpb.Comparison_EQ.Enum() {
-			return false, fmt.Errorf("bad operation for bools: %v", expr.GetOp().Enum())
+		switch *expr.GetOp().Enum() {
+		case hpb.Comparison_EQ:
+			return lhs.GetBool() == rhs.GetBool(), nil
+		case hpb.Comparison_NEQ:
+			return lhs.GetBool() != rhs.GetBool(), nil
 		}
-		return lhs.GetBool() == rhs.GetBool(), nil
+		return false, fmt.Errorf("bad operation for bools: %v", expr.GetOp().Enum())
 	case *hpb.Primitive_Float:
-		return cmp(expr.GetOp().Enum(), lhs.GetFloat(), rhs.GetFloat())
+		return cmpOrd(expr.GetOp().Enum(), lhs.GetFloat(), rhs.GetFloat())
 	case *hpb.Primitive_Int32:
-		return cmp(expr.GetOp().Enum(), lhs.GetInt32(), rhs.GetInt32())
+		return cmpOrd(expr.GetOp().Enum(), lhs.GetInt32(), rhs.GetInt32())
 	case *hpb.Primitive_String_:
-		return cmp(expr.GetOp().Enum(), lhs.GetString_(), rhs.GetString_())
+		return cmpOrd(expr.GetOp().Enum(), lhs.GetString_(), rhs.GetString_())
 	}
 
 	return false, fmt.Errorf("invalid operation %v for types %T %T", expr.GetOp().Enum(), lhs, rhs)
