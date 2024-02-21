@@ -19,16 +19,11 @@ func (d *Device) ExecuteAll(actions []*hpb.Event_Action) error {
 
 func (d *Device) Execute(action *hpb.Event_Action) error {
 	switch act := action.Action.(type) {
-	case *hpb.Event_Action_PowerState:
+	case *hpb.Event_Action_On:
 		switch d := d.d.(type) {
 		case PowerState:
-			if act.PowerState == hpb.PowerState_Off {
-				_, err := d.SetPowerState(false)
-				return err
-			} else {
-				_, err := d.SetPowerState(true)
-				return err
-			}
+			_, err := d.SetPowerState(act.On)
+			return err
 		}
 	case *hpb.Event_Action_Brightness:
 		switch d := d.d.(type) {

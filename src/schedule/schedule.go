@@ -32,6 +32,7 @@ func DevicesEvents(devices []*controller.Device, events *hpb.Events) (Scheduler,
 		var jobDef gocron.JobDefinition
 
 		if len(event.GetSchedule()) == 1 && event.GetSchedule()[0].GetCrontab() != "" {
+			// TODO: enable `withseconds` optionally
 			jobDef = gocron.CronJob(event.GetSchedule()[0].GetCrontab(), false)
 		} else {
 			ts := eventTimes(event)

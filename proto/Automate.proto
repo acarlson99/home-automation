@@ -6,13 +6,92 @@ option go_package = "./go";
 
 message Events { repeated Event event = 1; }
 
-enum PowerState {
-  Off = 0;
-  On = 1;
-}
-
 message DeviceIdentifier {
   oneof ident { string name = 1; }
+}
+message DeviceState {
+  enum Type {
+    Power = 0;
+    Brightness = 1;
+    Color = 2;
+    ColorTemperature = 3;
+  }
+  DeviceIdentifier device = 1;
+  Type type = 2;
+}
+
+message Primitive {
+  oneof v {
+    int32 int32 = 1;
+    float float = 8;
+    string string = 2;
+    bool bool = 4;
+  }
+}
+
+message Var {
+  oneof v {
+    Primitive prim = 1;
+    // // primitives
+    // int32 int32 = 1;
+    // float float = 8;
+    // string string = 2;
+    // bool bool = 4;
+    // advanced
+    DeviceState device_state = 3;
+    BinaryOperator bin_op = 5;
+    UnaryOperator unary_op = 6;
+    Comparison cmp = 7;
+  }
+}
+
+message BinaryOperator {
+  enum Operation {
+    // nums
+    ADD = 0;
+    SUB = 1;
+    MUL = 2;
+    DIV = 3;
+    MIN = 7;
+    MAX = 8;
+
+    // int+bool
+    OR = 4;
+    AND = 5;
+    XOR = 6;
+  }
+  Operation op = 1;
+  Var lhs = 2;
+  Var rhs = 3;
+}
+
+message UnaryOperator {
+  enum Operator {
+    // num
+    NEG = 0;
+    // c-style cast (only supports int,float,bool)
+    CAST_BOOL = 1;
+    CAST_INT = 2;
+    CAST_FLOAT = 3;
+    // bool
+    NOT = 4;
+  }
+  Operator op = 1;
+  Var x = 2;
+}
+
+message Comparison {
+  enum Operator {
+    GT = 0;
+    LT = 1;
+    EQ = 2;
+    GTEQ = 3;
+    LTEQ = 4;
+  }
+
+  Operator op = 1;
+  Var lhs = 2;
+  Var rhs = 3;
 }
 
 message Event {
@@ -27,6 +106,9 @@ message Event {
   repeated Schedule schedule = 2;
   repeated DeviceIdentifier devices = 3;
 
+  // TODO: implement this as precondition to Device.Execute
+  Comparison start_if = 4;
+
   message Color {
     int32 r = 1;
     int32 g = 2;
@@ -34,7 +116,7 @@ message Event {
   }
   message Action {
     oneof action {
-      PowerState power_state = 11;
+      bool on = 11;
       Color color = 12;
       int32 color_temp = 13;
       // brightness of 0 will resolve to `on=false`
