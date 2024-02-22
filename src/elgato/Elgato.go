@@ -13,11 +13,11 @@ import (
 	hpb "github.com/acarlson99/home-automation/proto/go"
 )
 
-const (
-	MinTemp       = 143
-	MaxTemp       = 344
-	MinBrightness = 3
-	MaxBrightness = 100
+var (
+	MinColorTemperature = 143
+	MaxColorTemperature = 344
+	MinBrightness       = 0
+	MaxBrightness       = 100
 )
 
 type LightState struct {
@@ -87,7 +87,7 @@ func (light *Light) SetLightVals(cfg *LightsConfig) (*LightsConfig, error) {
 	url := common.FmtURL(light.config.GetUrl(), light.config.GetPort(), "/elgato/lights")
 	method := "PUT"
 
-	log.Println("setting light to cfg:", cfg)
+	log.Println("setting light to cfg", cfg, "from")
 	bs, err := json.Marshal(cfg)
 	if err != nil {
 		return nil, err

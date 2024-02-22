@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -15,14 +16,19 @@ import (
 	tpb "google.golang.org/protobuf/encoding/prototext"
 )
 
-func main() {
-	// dname := flag.String("device-name", "", "device to modify")
-	// temperature := flag.Int("temperature", 150, "light temperature (if supported)")
-	// brightness := flag.Int("brightness", 50, "light brightness 0-100 (if supported)")
-	// on := flag.Int("on", 1, "turn on or off")
-	// flag.Parse()
+var (
+	deviceConfigFile   string
+	scheduleConfigFile string
+)
 
-	textpb, err := os.ReadFile("lights.textpb")
+func main() {
+	flag.StringVar(&deviceConfigFile, "devices", "devices.textpb", "textproto config for proto/Device.proto")
+	flag.StringVar(&scheduleConfigFile, "schedule", "schedule.textpb", "textproto config for proto/Automate.proto")
+	flag.Parse()
+
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	textpb, err := os.ReadFile(deviceConfigFile)
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +37,7 @@ func main() {
 		panic(err)
 	}
 
-	textpb, err = os.ReadFile("schedule.textpb")
+	textpb, err = os.ReadFile(scheduleConfigFile)
 	if err != nil {
 		panic(err)
 	}

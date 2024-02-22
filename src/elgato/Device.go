@@ -2,6 +2,16 @@ package elgato
 
 import (
 	"fmt"
+	"log"
+
+	"github.com/acarlson99/home-automation/src/device"
+)
+
+var (
+	_a = device.IDevice(&Light{})
+	_b = device.PowerState(&Light{})
+	_c = device.ColorTemperature(&Light{})
+	_d = device.Brightness(&Light{})
 )
 
 // implement controller.IDevice
@@ -30,6 +40,14 @@ func (light *Light) SendBatch() error {
 	// return nil
 }
 
+func (light *Light) GetMaxBrightness() int {
+	return MaxBrightness
+}
+
+func (light *Light) GetMinBrightness() int {
+	return MinBrightness
+}
+
 func (light *Light) GetBrightness() (int, error) {
 	vs, err := light.GetLightVals()
 	if err != nil {
@@ -44,6 +62,7 @@ func (light *Light) GetBrightness() (int, error) {
 func (light *Light) SetBrightness(n int) (int, error) {
 	light.mu.Lock()
 	defer light.mu.Unlock()
+	log.Println("set brightness to", n)
 	vs, err := light.GetLightVals()
 	if err != nil {
 		return 0, err
@@ -64,6 +83,14 @@ func (light *Light) SetBrightness(n int) (int, error) {
 	}
 
 	return light.GetBrightness()
+}
+
+func (light *Light) GetMaxColorTemperature() int {
+	return MaxColorTemperature
+}
+
+func (light *Light) GetMinColorTemperature() int {
+	return MinColorTemperature
 }
 
 func (light *Light) GetColorTemperature() (int, error) {
@@ -114,8 +141,6 @@ func (light *Light) GetPowerState() (bool, error) {
 }
 
 func (light *Light) SetPowerState(on bool) (bool, error) {
-	light.mu.Lock()
-	defer light.mu.Unlock()
 	vs, err := light.GetLightVals()
 	if err != nil {
 		return false, err
