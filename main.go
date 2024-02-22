@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -32,10 +31,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	smartDevices := &hpb.Devices{}
-	if err := tpb.Unmarshal(textpb, smartDevices); err != nil {
+	smartDevices := hpb.Devices{}
+	if err := tpb.Unmarshal(textpb, &smartDevices); err != nil {
 		panic(err)
 	}
+	log.Printf("%s:\n%s", deviceConfigFile, tpb.Format(&smartDevices))
 
 	textpb, err = os.ReadFile(scheduleConfigFile)
 	if err != nil {
@@ -45,7 +45,7 @@ func main() {
 	if err := tpb.Unmarshal(textpb, &events); err != nil {
 		panic(err)
 	}
-	fmt.Println(tpb.Format(&events))
+	log.Printf("%s:\n%s", scheduleConfigFile, tpb.Format(&events))
 
 	// register devices
 	devices := []*device.Device{}

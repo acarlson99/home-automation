@@ -19,8 +19,6 @@ message DeviceState {
   }
   DeviceIdentifier device = 1;
   Type type = 2;
-  // whether or not to change `Type` by relative or absolute numbers
-  bool relative = 3;
 }
 
 message Primitive {

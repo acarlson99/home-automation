@@ -22,7 +22,10 @@ func EvalVar(expr *hpb.Var) (*hpb.Primitive, error) {
 				break
 			}
 		}
-		return d.GetDeviceState(e.DeviceState.Type.Enum())
+		if d != nil {
+			return d.GetDeviceState(e.DeviceState.Type.Enum())
+		}
+		return nil, fmt.Errorf("device ident %v matches no registered devices", ident.GetName())
 		// TODO: determine if device has requested information
 		// TODO: return said information in a user-friendly manner
 	case *hpb.Var_BinOp:

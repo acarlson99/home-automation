@@ -24,20 +24,20 @@ func (light *Light) NameMatches(s string) bool {
 }
 
 func (light *Light) BeginBatch() error {
-	return nil
-	// // TODO: this
-	// lights, err := light.GetLightVals()
+	// vs, err := light.GetLightVals()
 	// if err != nil {
 	// 	return err
 	// }
-	// light.lights = lights
-	// return nil
+	// light.lights = vs
+	return nil
 }
 
 func (light *Light) SendBatch() error {
+	// _, err := light.SetLightVals(light.lights)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
-	// light.SetLightVals(light.lights)
-	// return nil
 }
 
 func (light *Light) GetMaxBrightness() int {

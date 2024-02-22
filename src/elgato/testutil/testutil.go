@@ -86,6 +86,11 @@ func (fs *FakeLightServer) GetLightsConfig() *elgato.LightsConfig {
 	return fs.lightsConfig
 }
 
+func (fs *FakeLightServer) SetLightsConfig(cfg elgato.LightsConfig) *elgato.LightsConfig {
+	fs.lightsConfig = &cfg
+	return fs.lightsConfig
+}
+
 // BeginBatch implements device.IDevice.
 func (*FakeLightServer) BeginBatch() error {
 	return nil

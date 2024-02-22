@@ -7,9 +7,29 @@ import (
 	"testing"
 
 	hpb "github.com/acarlson99/home-automation/proto/go"
+	"github.com/acarlson99/home-automation/src/device"
+	"github.com/acarlson99/home-automation/src/elgato"
+	"github.com/acarlson99/home-automation/src/elgato/testutil"
 )
 
 func TestEvalVar(t *testing.T) {
+	conf := elgato.LightsConfig{
+		NumberOfLights: 1,
+		Lights: []elgato.LightState{
+			{
+				On:          1,
+				Brightness:  95,
+				Temperature: 400,
+			},
+		},
+	}
+	lname := "test-light"
+	deviceServer, cleanup := testutil.NewFakeLightServer(t, lname, &conf)
+	defaultDevice := device.NewDevice(deviceServer)
+	defer cleanup()
+	device.RegisterDevice(defaultDevice)
+	defer device.UnregisterDevice(defaultDevice)
+
 	type args struct {
 		expr *hpb.Var
 	}
@@ -71,6 +91,104 @@ func TestEvalVar(t *testing.T) {
 					Int32: 6,
 				},
 			},
+		},
+		{
+			name: "device state for invalid device",
+			args: args{
+				expr: &hpb.Var{
+					V: &hpb.Var_DeviceState{
+						DeviceState: &hpb.DeviceState{
+							Device: &hpb.DeviceIdentifier{
+								Ident: &hpb.DeviceIdentifier_Name{
+									Name: "test-invalid-light",
+								},
+							},
+							Type: hpb.DeviceState_Power,
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "device state for good device",
+			args: args{
+				expr: &hpb.Var{
+					V: &hpb.Var_DeviceState{
+						DeviceState: &hpb.DeviceState{
+							Device: &hpb.DeviceIdentifier{
+								Ident: &hpb.DeviceIdentifier_Name{
+									Name: lname,
+								},
+							},
+							Type: hpb.DeviceState_Power,
+						},
+					},
+				},
+			},
+			want: &hpb.Primitive{
+				V: &hpb.Primitive_Bool{
+					Bool: conf.Lights[0].On == 1,
+				},
+			},
+		},
+		{
+			name: "device state for good device",
+			args: args{
+				expr: &hpb.Var{
+					V: &hpb.Var_DeviceState{
+						DeviceState: &hpb.DeviceState{
+							Device: &hpb.DeviceIdentifier{
+								Ident: &hpb.DeviceIdentifier_Name{
+									Name: lname,
+								},
+							},
+							Type: hpb.DeviceState_Brightness,
+						},
+					},
+				},
+			},
+			want: &hpb.Primitive{
+				V: &hpb.Primitive_Int32{
+					Int32: int32(conf.Lights[0].Brightness),
+				},
+			},
+		},
+		{
+			name: "good cmp",
+			args: args{
+				expr: &hpb.Var{
+					V: &hpb.Var_Cmp{
+						Cmp: &hpb.Comparison{
+
+							Op:  hpb.Comparison_EQ,
+							Lhs: &hpb.Var{V: &hpb.Var_Prim{Prim: &hpb.Primitive{V: &hpb.Primitive_Int32{Int32: 9}}}},
+							Rhs: &hpb.Var{V: &hpb.Var_Prim{Prim: &hpb.Primitive{V: &hpb.Primitive_Int32{Int32: 9}}}},
+						},
+					},
+				},
+			},
+			want: &hpb.Primitive{
+				V: &hpb.Primitive_Bool{
+					Bool: true,
+				},
+			},
+		},
+		{
+			name: "cmp should fail on invaid type combination",
+			args: args{
+				expr: &hpb.Var{
+					V: &hpb.Var_Cmp{
+						Cmp: &hpb.Comparison{
+
+							Op:  hpb.Comparison_LT,
+							Lhs: &hpb.Var{V: &hpb.Var_Prim{Prim: &hpb.Primitive{V: &hpb.Primitive_Bool{Bool: true}}}},
+							Rhs: &hpb.Var{V: &hpb.Var_Prim{Prim: &hpb.Primitive{V: &hpb.Primitive_Int32{Int32: 9}}}},
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -537,6 +655,16 @@ func TestEvalUnaryOperator(t *testing.T) {
 				},
 			},
 			want: &hpb.Primitive{V: &hpb.Primitive_Int32{Int32: 42}},
+		},
+		{
+			name: "cast bool to float",
+			args: args{
+				expr: &hpb.UnaryOperator{
+					Op: hpb.UnaryOperator_CAST_FLOAT,
+					X:  varBool(true),
+				},
+			},
+			want: &hpb.Primitive{V: &hpb.Primitive_Float{Float: 1}},
 		},
 	}
 	for _, tt := range tests {

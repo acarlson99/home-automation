@@ -166,6 +166,7 @@ func (dev *Device) Execute(action *hpb.Event_Action) error {
 				_, err = powerDevice.SetPowerState(false)
 				return err
 			}
+			return nil
 		}
 	// case *hpb.Event_Action_Color:
 	// 	return fmt.Errorf("color not implemented")

@@ -1,6 +1,7 @@
 package controller_test
 
 import (
+	"log"
 	"testing"
 
 	hpb "github.com/acarlson99/home-automation/proto/go"
@@ -18,23 +19,21 @@ func TestRunEvent(t *testing.T) {
 	elgato.MinBrightness = 0
 	elgato.MaxColorTemperature = 100
 	elgato.MinColorTemperature = 0
-	conf := elgato.LightsConfig{
-		NumberOfLights: 1,
-		Lights: []elgato.LightState{
-			{
-				On:          1,
-				Brightness:  50,
-				Temperature: 20,
-			},
-		},
-	}
 	lname := "test-light"
-	defaultDevice, cleanup := testutil.NewFakeLightServer(t, lname, &conf)
+	lightServer, cleanup := testutil.NewFakeLightServer(t, lname, nil)
+	defaultDevice := device.NewDevice(lightServer)
 	defer cleanup()
+	device.RegisterDevice(defaultDevice)
+	defer device.UnregisterDevice(defaultDevice)
+
+	defaultLightConf := elgato.LightState{
+		On:          1,
+		Brightness:  50,
+		Temperature: 50,
+	}
 
 	type args struct {
-		devices []*device.Device
-		event   string
+		event string
 	}
 	tests := []struct {
 		name string
@@ -44,7 +43,6 @@ func TestRunEvent(t *testing.T) {
 		{
 			name: "static set brightness",
 			args: args{
-				devices: []*device.Device{device.NewDevice(defaultDevice)},
 				event: `name: "lights 50% warm"
 devices {
 	name: "test-light"
@@ -77,7 +75,6 @@ schedule {
 		{
 			name: "change relative brightness",
 			args: args{
-				devices: []*device.Device{device.NewDevice(defaultDevice)},
 				event: `name: "temp bright -20%"
 devices {
 	name: "test-light"
@@ -104,26 +101,39 @@ schedule {
 					{
 						On:          1,
 						Brightness:  50 - 20,
-						Temperature: 100 - 20,
+						Temperature: 50 - 20,
 					},
 				},
 			},
 		},
 		{
-			name: "change relative brightness",
+			name: "change brightness successful conditional",
 			args: args{
-				devices: []*device.Device{device.NewDevice(defaultDevice)},
-				event: `name: "temp bright -20 again%"
+				event: `name: "conditional"
 devices {
 	name: "test-light"
 }
 actions {
-	brightness: -20
-	relative: true
+	brightness: 100
 }
 actions {
-	color_temp: -20
-	relative: true
+	color_temp: 100
+}
+start_if {
+	op: EQ
+	lhs {
+		prim {
+			bool: true
+		}
+	}
+	rhs {
+		device_state {
+			device {
+				name: "test-light"
+			}
+			type: Power
+		}
+	}
 }
 schedule {
 	daily {
@@ -138,18 +148,115 @@ schedule {
 				Lights: []elgato.LightState{
 					{
 						On:          1,
-						Brightness:  50 - 20*2,
-						Temperature: 100 - 20*2,
+						Brightness:  100,
+						Temperature: 100,
 					},
 				},
+			},
+		},
+		{
+			name: "change brightness with invalid conditional should yield no change",
+			args: args{
+				event: `name: "conditional"
+devices {
+	name: "test-light"
+}
+actions {
+	brightness: 30
+}
+actions {
+	color_temp: 20
+}
+start_if {
+	op: EQ
+	lhs {
+		prim {
+			int32: 30
+		}
+	}
+	rhs {
+		device_state {
+			device {
+				name: "test-light"
+			}
+			type: Power
+		}
+	}
+}
+schedule {
+	daily {
+		hour: 20
+		minute: 0
+		second: 0
+	}
+}`,
+			},
+			want: &elgato.LightsConfig{
+				NumberOfLights: 1,
+				Lights:         []elgato.LightState{defaultLightConf},
+			},
+		},
+		{
+			name: "change brightness with failing conditional should yield no change",
+			args: args{
+				event: `name: "conditional"
+devices {
+	name: "test-light"
+}
+actions {
+	brightness: 30
+}
+actions {
+	color_temp: 20
+}
+start_if {
+	op: NEQ
+	lhs {
+		prim {
+			bool: true
+		}
+	}
+	rhs {
+		device_state {
+			device {
+				name: "test-light"
+			}
+			type: Power
+		}
+	}
+}
+schedule {
+	daily {
+		hour: 20
+		minute: 0
+		second: 0
+	}
+}`,
+			},
+			want: &elgato.LightsConfig{
+				NumberOfLights: 1,
+				Lights:         []elgato.LightState{defaultLightConf},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			lightServer.SetLightsConfig(elgato.LightsConfig{
+				NumberOfLights: 1,
+				Lights:         []elgato.LightState{defaultLightConf},
+			})
+
 			event := &hpb.Event{}
-			tpb.Unmarshal([]byte(tt.args.event), event)
-			controller.RunEvent(tt.args.devices, event)
+			err := tpb.Unmarshal([]byte(tt.args.event), event)
+			if err != nil {
+				t.Fatal("could not unmarshal test:", err)
+			}
+			log.Printf("run event %s %+v", event.Name, event.GetStartIf())
+			controller.RunEvent([]*device.Device{defaultDevice}, event)
+
+			if diff := cmp.Diff(tt.want, lightServer.GetLightsConfig()); diff != "" {
+				t.Errorf("(-want, +got)\n%s", diff)
+			}
 		})
 	}
 }
@@ -198,7 +305,7 @@ func TestRunIterativeEvent(t *testing.T) {
 	tpb.Unmarshal([]byte(s), event)
 
 	tests := []*elgato.LightsConfig{
-		&elgato.LightsConfig{
+		{
 			NumberOfLights: 1,
 			Lights: []elgato.LightState{
 				{
@@ -208,7 +315,7 @@ func TestRunIterativeEvent(t *testing.T) {
 				},
 			},
 		},
-		&elgato.LightsConfig{
+		{
 			NumberOfLights: 1,
 			Lights: []elgato.LightState{
 				{
@@ -218,7 +325,7 @@ func TestRunIterativeEvent(t *testing.T) {
 				},
 			},
 		},
-		&elgato.LightsConfig{
+		{
 			NumberOfLights: 1,
 			Lights: []elgato.LightState{
 				{
@@ -228,7 +335,7 @@ func TestRunIterativeEvent(t *testing.T) {
 				},
 			},
 		},
-		&elgato.LightsConfig{
+		{
 			NumberOfLights: 1,
 			Lights: []elgato.LightState{
 				{
@@ -238,7 +345,7 @@ func TestRunIterativeEvent(t *testing.T) {
 				},
 			},
 		},
-		&elgato.LightsConfig{
+		{
 			NumberOfLights: 1,
 			Lights: []elgato.LightState{
 				{
