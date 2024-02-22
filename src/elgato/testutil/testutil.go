@@ -91,8 +91,17 @@ func (fs *FakeLightServer) SetLightsConfig(cfg elgato.LightsConfig) *elgato.Ligh
 	return fs.lightsConfig
 }
 
+// EndBatch implements device.IDevice.
+func (*FakeLightServer) EndBatch() {
+}
+
 // BeginBatch implements device.IDevice.
 func (*FakeLightServer) BeginBatch() error {
+	return nil
+}
+
+// SendBatch implements device.IDevice.
+func (*FakeLightServer) SendBatch() error {
 	return nil
 }
 
@@ -104,11 +113,6 @@ func (s *FakeLightServer) GetName() string {
 // NameMatches implements device.IDevice.
 func (fs *FakeLightServer) NameMatches(s string) bool {
 	return s == fs.GetName()
-}
-
-// SendBatch implements device.IDevice.
-func (*FakeLightServer) SendBatch() error {
-	return nil
 }
 
 func NewFakeLightServer(t *testing.T, name string, conf *elgato.LightsConfig) (*FakeLightServer, func()) {
@@ -127,7 +131,6 @@ func (s *FakeLightServer) HandlerFunc(t *testing.T) func(rw http.ResponseWriter,
 			}
 			reqLights := &elgato.LightsConfig{}
 			json.Unmarshal(body, reqLights)
-			// log.Println(reqLights)
 
 			s.Handle(reqLights)
 		}

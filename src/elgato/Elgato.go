@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"sync"
 
@@ -61,21 +60,21 @@ func (light *Light) GetLightVals() (*LightsConfig, error) {
 	req, err := http.NewRequest(method, url, nil)
 
 	if err != nil {
-		log.Println(err)
+		common.Logger(common.Error).Println(err)
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "text/json")
 
 	res, err := light.client.Do(req)
 	if err != nil {
-		log.Println(err)
+		common.Logger(common.Error).Println(err)
 		return nil, err
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Println(err)
+		common.Logger(common.Error).Println(err)
 		return nil, err
 	}
 	var lightsConfig LightsConfig
@@ -87,7 +86,7 @@ func (light *Light) SetLightVals(cfg *LightsConfig) (*LightsConfig, error) {
 	url := common.FmtURL(light.config.GetUrl(), light.config.GetPort(), "/elgato/lights")
 	method := "PUT"
 
-	log.Println("setting light to cfg", cfg, "from")
+	common.Logger(common.Debug).Println("setting light to cfg", cfg, "from")
 	bs, err := json.Marshal(cfg)
 	if err != nil {
 		return nil, err
@@ -98,26 +97,26 @@ func (light *Light) SetLightVals(cfg *LightsConfig) (*LightsConfig, error) {
 	// req.Close = true
 
 	if err != nil {
-		log.Println(err)
+		common.Logger(common.Error).Println(err)
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "text/json")
 
 	res, err := light.client.Do(req)
 	if err != nil {
-		log.Println(err)
+		common.Logger(common.Error).Println(err)
 		return nil, err
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Println(err)
+		common.Logger(common.Error).Println(err)
 		return nil, err
 	}
 	var lightsConfig LightsConfig
 	err = json.Unmarshal(body, &lightsConfig)
-	log.Println("has set light to cfg:", lightsConfig)
+	common.Logger(common.Debug).Println("has set light to cfg:", lightsConfig)
 	return &lightsConfig, err
 }
 

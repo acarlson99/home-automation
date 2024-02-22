@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"sync"
 
+	"github.com/acarlson99/home-automation/src/common"
 	"github.com/acarlson99/home-automation/src/device"
 	"github.com/acarlson99/home-automation/src/elgato"
 	"github.com/acarlson99/home-automation/src/expr"
@@ -25,8 +25,6 @@ func main() {
 	flag.StringVar(&scheduleConfigFile, "schedule", "schedule.textpb", "textproto config for proto/Automate.proto")
 	flag.Parse()
 
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-
 	textpb, err := os.ReadFile(deviceConfigFile)
 	if err != nil {
 		panic(err)
@@ -35,7 +33,7 @@ func main() {
 	if err := tpb.Unmarshal(textpb, &smartDevices); err != nil {
 		panic(err)
 	}
-	log.Printf("%s:\n%s", deviceConfigFile, tpb.Format(&smartDevices))
+	common.Logger(common.Info).Printf("%s:\n%s", deviceConfigFile, tpb.Format(&smartDevices))
 
 	textpb, err = os.ReadFile(scheduleConfigFile)
 	if err != nil {
@@ -45,7 +43,7 @@ func main() {
 	if err := tpb.Unmarshal(textpb, &events); err != nil {
 		panic(err)
 	}
-	log.Printf("%s:\n%s", scheduleConfigFile, tpb.Format(&events))
+	common.Logger(common.Info).Printf("%s:\n%s", scheduleConfigFile, tpb.Format(&events))
 
 	// register devices
 	devices := []*device.Device{}
@@ -57,9 +55,10 @@ func main() {
 			devices = append(devices, newD)
 			err := device.RegisterDevice(newD)
 			if err != nil {
-				log.Fatal(err)
+				common.Logger(common.Error).Fatal(err)
 			}
 		case *hpb.SmartDevice_GoveeLight:
+			common.Logger(common.Error).Fatal("unimplemented device")
 		}
 	}
 
@@ -70,13 +69,13 @@ func main() {
 		}
 		_, err := expr.EvalComparisons(conds)
 		if err != nil {
-			log.Fatalf("invalid start_if fails: %v\n", err)
+			common.Logger(common.Error).Fatalf("invalid start_if fails: %v\n", err)
 		}
 	}
 
 	scheduler, err := schedule.DevicesEvents(devices, &events)
 	if err != nil {
-		log.Fatalf("Unexpected error creating devices: %v\n", err)
+		common.Logger(common.Error).Fatalf("Unexpected error creating devices: %v\n", err)
 	}
 	scheduler.Start()
 

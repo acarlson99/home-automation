@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"log"
-
 	"github.com/acarlson99/home-automation/src/common"
 	"github.com/acarlson99/home-automation/src/device"
 	"github.com/acarlson99/home-automation/src/expr"
@@ -15,14 +13,14 @@ func RunEvent(devices []*device.Device, event *hpb.Event) {
 	for _, d := range devices {
 		dnames = append(dnames, d.GetName())
 	}
-	log.Println("running scheduled routine", event.GetName(), "for devices", dnames)
+	common.Logger(common.Info).Printf("running scheduled routine \"%s\" for devices %v", event.GetName(), dnames)
 
 	do, err := expr.EvalComparisons(event.GetStartIf())
 	if err != nil {
-		log.Printf("Error evaluating comparison: %v\n", err)
+		common.Logger(common.Error).Printf("Error evaluating comparison: %v\n", err)
 	}
 	if !do {
-		log.Println("comparison returned false, skipping")
+		common.Logger(common.Debug).Println("comparison returned false, skipping")
 		return
 	}
 
@@ -30,6 +28,6 @@ func RunEvent(devices []*device.Device, event *hpb.Event) {
 	err = common.ConcurrentAggregateErrorFn(f, devices...)
 	if err != nil {
 		// TODO: more advanced error reporting than this
-		log.Printf("Error executing event %v: %v\n", event.Name, err)
+		common.Logger(common.Error).Printf("Error executing event %v: %v\n", event.Name, err)
 	}
 }

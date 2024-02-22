@@ -2,8 +2,8 @@ package schedule
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/acarlson99/home-automation/src/common"
 	"github.com/acarlson99/home-automation/src/controller"
 	"github.com/acarlson99/home-automation/src/device"
 	"github.com/go-co-op/gocron/v2"
@@ -58,7 +58,7 @@ func DevicesEvents(devices []*device.Device, events *hpb.Events) (Scheduler, err
 		if err != nil {
 			return nil, fmt.Errorf("could not create gocron job: %v", err)
 		}
-		log.Println("scheduled id", j.ID(), "for", event.Name)
+		common.Logger(common.Info).Println("scheduled id", j.ID(), "for", event.Name)
 	}
 
 	return s, nil

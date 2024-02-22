@@ -2,7 +2,6 @@ package device
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
 	hpb "github.com/acarlson99/home-automation/proto/go"
@@ -19,7 +18,8 @@ type IDevice interface {
 	NameMatches(s string) bool
 
 	BeginBatch() error // batch a set of actions
-	SendBatch() error  // send all actions made since `BeginBatch`
+	EndBatch()
+	SendBatch() error // send all actions made since `BeginBatch`
 }
 
 type Device struct {
@@ -120,12 +120,16 @@ func (d *Device) GetDeviceState(t *hpb.DeviceState_Type) (*hpb.Primitive, error)
 }
 
 func (d *Device) ExecuteAll(actions []*hpb.Event_Action) error {
-	d.d.BeginBatch()
-	err := common.AggregateErrorFn(d.Execute, actions...)
+	err := d.d.BeginBatch() // lock
+	defer d.d.EndBatch()    // unlock
 	if err != nil {
 		return err
 	}
-	return d.d.SendBatch()
+	err = common.AggregateErrorFn(d.Execute, actions...)
+	if err != nil {
+		return err
+	}
+	return d.d.SendBatch() // send
 }
 
 // percent should be number from 0-1
@@ -150,9 +154,9 @@ func (dev *Device) Execute(action *hpb.Event_Action) error {
 				if err != nil {
 					return err
 				}
-				log.Println("current brightness", current, "changing", act.Brightness, "%")
+				common.Logger(common.Debug).Println("current brightness", current, "changing", act.Brightness, "%")
 				brightness = int32(current + percentStep(float32(act.Brightness)/100.0, d.GetMaxBrightness(), d.GetMinBrightness()))
-				log.Println("modifying brightness to", act.Brightness)
+				common.Logger(common.Debug).Println("modifying brightness to", act.Brightness)
 			}
 			_, err := d.SetBrightness(common.Clamp(d.GetMinBrightness(), int(brightness), d.GetMaxBrightness()))
 			if err != nil {
