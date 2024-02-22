@@ -86,7 +86,8 @@ func (light *Light) SetLightVals(cfg *LightsConfig) (*LightsConfig, error) {
 	url := common.FmtURL(light.config.GetUrl(), light.config.GetPort(), "/elgato/lights")
 	method := "PUT"
 
-	common.Logger(common.Debug).Println("setting light to cfg", cfg, "from")
+	old, _ := light.GetLightVals()
+	common.Logger(common.Debug).Println("setting light to cfg", cfg, "from", old)
 	bs, err := json.Marshal(cfg)
 	if err != nil {
 		return nil, err
