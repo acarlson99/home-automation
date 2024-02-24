@@ -1,0 +1,14 @@
+device {
+  elgato_light {
+    name: "kitchen-light"
+    url: "127.0.0.60"
+    port: "9090"
+  }
+}
+device {
+  elgato_light {
+    name: "office-light"
+    url: "127.0.0.61"
+    port: "9090"
+  }
+}

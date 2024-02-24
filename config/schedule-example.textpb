@@ -1,0 +1,94 @@
+event {
+    name: "lower lights nighttime warm"
+    devices {
+        name: "kitchen-light"
+    }
+    devices {
+        name: "office-light"
+    }
+    actions {
+        brightness: -1
+        relative: true
+    }
+    actions {
+        color_temp: 344
+    }
+    schedule {
+        crontab: "0/1 20 * * *"
+    }
+}
+event {
+    name: "lower lights latenight warm"
+    devices {
+        name: "kitchen-light"
+    }
+    devices {
+        name: "office-light"
+    }
+    actions {
+        brightness: -1
+        relative: true
+    }
+    schedule {
+        crontab: "0/4 21 * * *"
+    }
+}
+event {
+    name: "lights off after bedtime"
+    devices {
+        name: "kitchen-light"
+    }
+    devices {
+        name: "office-light"
+    }
+    actions {
+        on: false
+    }
+    schedule {
+        crontab: "30 22 * * *"
+    }
+}
+event {
+    name: "lights on morning"
+    devices {
+        name: "kitchen-light"
+    }
+    devices {
+        name: "office-light"
+    }
+    actions {
+        on: true
+    }
+    actions {
+        color_temp: 200
+    }
+    schedule {
+        crontab: "0 8 * * *"
+    }
+}
+event {
+    name: "increase kitchen lights morning cool"
+    devices {
+        name: "kitchen-light"
+    }
+    actions {
+        brightness: 5
+        relative: true
+    }
+    schedule {
+        crontab: "0/3 8 * * *"
+    }
+}
+event {
+    name: "increase office lights morning cool"
+    devices {
+        name: "office-light"
+    }
+    actions {
+        brightness: 2
+        relative: true
+    }
+    schedule {
+        crontab: "0/3 8 * * *"
+    }
+}
