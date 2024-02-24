@@ -10,6 +10,9 @@ all: $(NAME)
 $(NAME): $(GO_PROTO_OUTS) $(GO_SRC)
 	go build .
 
+install: $(NAME)
+	cp $(NAME) $(GOPATH)/bin
+
 # $(GO_PROTOS):
 # 	protoc -I=$(PROTO_DIR) --go_out=$(PROTO_DIR) $(PROTOS)
 
