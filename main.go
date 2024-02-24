@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 	"sync"
 
@@ -18,30 +19,51 @@ import (
 var (
 	deviceConfigFile   string
 	scheduleConfigFile string
+	logLvl             string
 )
 
 func main() {
 	flag.StringVar(&deviceConfigFile, "devices", "devices.textpb", "textproto config for proto/Device.proto")
 	flag.StringVar(&scheduleConfigFile, "schedule", "schedule.textpb", "textproto config for proto/Automate.proto")
+	flag.StringVar(&logLvl, "log-level", "warn", "level of detail to log: oneof error,warn,info,debug")
 	flag.Parse()
+
+	switch logLvl {
+	case "error":
+		common.SetLogLevel(common.Error)
+	case "warn":
+		common.SetLogLevel(common.Warn)
+	case "info":
+		common.SetLogLevel(common.Info)
+	case "debug":
+		common.SetLogLevel(common.Debug)
+	default:
+		log.Println("invalid log level:", logLvl)
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	textpb, err := os.ReadFile(deviceConfigFile)
 	if err != nil {
-		panic(err)
+		common.Logger(common.Error).Printf("Error reading file %s: %v", deviceConfigFile, err)
+		os.Exit(1)
 	}
 	smartDevices := hpb.Devices{}
 	if err := tpb.Unmarshal(textpb, &smartDevices); err != nil {
-		panic(err)
+		common.Logger(common.Error).Printf("Error unmarshalling proto: %v", err)
+		os.Exit(1)
 	}
 	common.Logger(common.Info).Printf("%s:\n%s", deviceConfigFile, tpb.Format(&smartDevices))
 
 	textpb, err = os.ReadFile(scheduleConfigFile)
 	if err != nil {
-		panic(err)
+		common.Logger(common.Error).Printf("Error reading file %s: %v", scheduleConfigFile, err)
+		os.Exit(1)
 	}
 	events := hpb.Events{}
 	if err := tpb.Unmarshal(textpb, &events); err != nil {
-		panic(err)
+		common.Logger(common.Error).Printf("Error unmarshalling proto: %v", err)
+		os.Exit(1)
 	}
 	common.Logger(common.Info).Printf("%s:\n%s", scheduleConfigFile, tpb.Format(&events))
 

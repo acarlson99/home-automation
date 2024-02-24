@@ -13,10 +13,10 @@ func (EmptyWriter) Write(p []byte) (n int, err error) {
 }
 
 var (
-	LogDebug   = log.New(os.Stderr, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
-	LogInfo    = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-	LogWarning = log.New(os.Stderr, "WARNING: ", log.Ldate|log.Ltime|log.Lshortfile)
 	LogError   = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	LogWarning = log.New(os.Stderr, "WARNING: ", log.Ldate|log.Ltime|log.Lshortfile)
+	LogInfo    = log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	LogDebug   = log.New(os.Stderr, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
 	LogEmpty   = log.New(EmptyWriter{}, "", 0)
 
 	LogLevel = Error | Warn | Info | Debug
@@ -25,10 +25,10 @@ var (
 type Level int
 
 const (
+	Error Level = 1 << iota
 	Warn  Level = 1 << iota
 	Info  Level = 1 << iota
 	Debug Level = 1 << iota
-	Error Level = 1 << iota
 )
 
 func Logger(level Level) *log.Logger {
@@ -45,4 +45,21 @@ func Logger(level Level) *log.Logger {
 		}
 	}
 	return LogEmpty
+}
+
+func SetLogLevel(level Level) {
+	LogLevel = 0
+	switch level {
+	case Debug:
+		LogLevel |= Debug
+		fallthrough
+	case Info:
+		LogLevel |= Info
+		fallthrough
+	case Warn:
+		LogLevel |= Warn
+		fallthrough
+	case Error:
+		LogLevel |= Error
+	}
 }
