@@ -5,7 +5,7 @@ go 1.21.1
 require (
 	github.com/go-co-op/gocron/v2 v2.2.4
 	github.com/google/go-cmp v0.6.0
-	golang.org/x/exp v0.0.0-20240213143201-ec583247a57a
+	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	google.golang.org/protobuf v1.32.0
 )
 
