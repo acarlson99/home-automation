@@ -22,12 +22,22 @@ func eventTimes(event *hpb.Event) []gocron.AtTime {
 
 type Scheduler gocron.Scheduler
 
-func DevicesEvents(devices []*device.Device, events *hpb.Events) (Scheduler, error) {
+type EventDevice struct {
+	Ds    []*device.Device
+	Event *hpb.Event
+}
+
+func (ed *EventDevice) RunEvent() {
+	controller.RunEvent(ed.Ds, ed.Event)
+}
+
+func DevicesEvents(devices []*device.Device, events *hpb.Events) (Scheduler, []*EventDevice, error) {
 	s, err := gocron.NewScheduler()
 	if err != nil {
-		return nil, fmt.Errorf("could not create gocron scheduler: %v", err)
+		return nil, nil, fmt.Errorf("could not create gocron scheduler: %v", err)
 	}
 
+	eventDevicesList := []*EventDevice{}
 	for _, event := range events.Event {
 		var jobDef gocron.JobDefinition
 
@@ -54,12 +64,13 @@ func DevicesEvents(devices []*device.Device, events *hpb.Events) (Scheduler, err
 			}
 		}
 
+		eventDevicesList = append(eventDevicesList, &EventDevice{Ds: eventDevices, Event: event})
 		j, err := s.NewJob(jobDef, gocron.NewTask(controller.RunEvent, eventDevices, event))
 		if err != nil {
-			return nil, fmt.Errorf("could not create gocron job: %v", err)
+			return nil, nil, fmt.Errorf("could not create gocron job: %v", err)
 		}
 		common.Logger(common.Info).Println("scheduled id", j.ID(), "for", event.Name)
 	}
 
-	return s, nil
+	return s, eventDevicesList, nil
 }
